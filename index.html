@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Jump - Esquiva el Láser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #0b0f19;
+      color: #ffffff;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    .neon-border {
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+    .neon-text-blue {
+      text-shadow: 0 0 8px rgba(59, 130, 246, 0.8), 0 0 20px rgba(37, 99, 235, 0.6);
+    }
+    .neon-text-red {
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 0 20px rgba(220, 38, 38, 0.6);
+    }
+    @keyframes pulse-blue {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.7), 0 0 30px rgba(37, 99, 235, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.9), 0 0 50px rgba(59, 130, 246, 0.6);
+      }
+    }
+    .btn-jump-glow {
+      animation: pulse-blue 2s infinite;
+    }
+    .btn-jump-glow:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen justify-between items-center bg-slate-950 p-2 sm:p-4 select-none">
+
+  <header class="w-full max-w-2xl flex justify-between items-center bg-slate-900/80 backdrop-blur-md border border-slate-800 p-3 sm:p-4 rounded-2xl shadow-lg z-10">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-500/50 flex items-center justify-center text-blue-400">
+        <i class="fa-solid fa-bolt text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-orbitron font-bold text-sm sm:text-base text-blue-400 tracking-wider">CYBER JUMP</h1>
+        <p class="text-xs text-slate-400">Esquiva y Vuela</p>
+      </div>
+    </div>
+
+    <!-- Fuel Gauge -->
+    <div class="flex flex-col items-center">
+      <div class="flex items-center gap-1 text-[10px] sm:text-xs text-cyan-400 font-orbitron font-bold mb-1">
+        <i class="fa-solid fa-gas-pump"></i> COMBUSTIBLE
+      </div>
+      <div class="w-20 sm:w-28 bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5">
+        <div id="fuelBar" class="bg-gradient-to-r from-cyan-400 to-emerald-400 h-full rounded-full transition-all duration-75" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Level Indicator -->
+    <div class="flex flex-col items-center font-orbitron">
+      <span class="text-[10px] text-slate-400 uppercase tracking-wider block">NIVEL</span>
+      <span id="levelBadge" class="text-sm sm:text-lg font-black text-cyan-400 px-2 py-0.5 bg-cyan-950/60 border border-cyan-500/40 rounded-lg">1</span>
+    </div>
+
+    <!-- Scores -->
+    <div class="flex gap-3 sm:gap-6 font-orbitron">
+      <div class="text-right">
+        <span class="text-[10px] text-slate-400 uppercase tracking-wider block">PUNTOS</span>
+        <span id="scoreText" class="text-base sm:text-2xl font-black text-white">0</span>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] text-slate-400 uppercase tracking-wider block">RÉCORD</span>
+        <span id="highScoreText" class="text-base sm:text-2xl font-black text-yellow-400">0</span>
+      </div>
+    </div>
+
+    <!-- Sound Toggle -->
+    <button id="soundToggleBtn" class="p-2 sm:p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors">
+      <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+    </button>
+  </header>
+
+  <main class="relative w-full max-w-2xl flex-1 my-2 sm:my-4 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl">
+    <canvas id="gameCanvas" class="w-full h-full block rounded-2xl"></canvas>
+
+    <!-- Level Up Banner -->
+    <div id="levelUpBanner" class="hidden absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border-2 border-yellow-400/80 px-6 py-4 rounded-2xl shadow-2xl shadow-yellow-500/20 z-20 text-center pointer-events-none transition-all duration-300">
+      <div class="text-yellow-400 font-orbitron text-xs font-bold uppercase tracking-widest mb-1"><i class="fa-solid fa-award"></i> ¡NIVEL COMPLETADO!</div>
+      <h3 id="levelUpTitle" class="text-xl sm:text-2xl font-orbitron font-black text-white">NIVEL 2</h3>
+      <p id="levelUpSub" class="text-xs text-slate-300 font-sans mt-0.5">¡Aumentando velocidad!</p>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="startOverlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 transition-opacity duration-300">
+      <div class="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mb-4 border border-blue-500/40 text-blue-400 text-2xl animate-bounce">
+        <i class="fa-solid fa-jet-fighter"></i>
+      </div>
+      <h2 class="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 tracking-wide neon-text-blue">
+        CYBER JUMP
+      </h2>
+      <p class="text-slate-300 text-xs sm:text-sm max-w-xs mb-4">
+        Presiona <strong class="text-blue-400">SALTAR</strong> o mantén <strong class="text-cyan-400">VOLAR</strong>. Usa los <strong class="text-emerald-400">láseres verdes trampolín</strong> para rebotar hacia arriba.
+      </p>
+
+      <!-- Photosensitivity Alert -->
+      <div class="mb-5 p-2.5 px-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-[11px] sm:text-xs flex items-center justify-center gap-2 max-w-xs">
+        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm flex-shrink-0"></i>
+        <span><strong>Aviso de fotosensibilidad:</strong> Contiene destellos de luz neón y cambios de contraste.</span>
+      </div>
+
+      <button id="startGameBtn" class="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-orbitron font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:scale-105 active:scale-95">
+        INICIAR JUEGO
+      </button>
+    </div>
+
+    <!-- Normal Victory Modal -->
+    <div id="winModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 transition-all duration-300">
+      <div class="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4 border border-yellow-500/50 text-yellow-400 text-3xl animate-bounce">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 class="font-orbitron text-3xl sm:text-4xl font-black text-yellow-400 mb-2 tracking-wider">
+        ¡HAS GANADO!
+      </h2>
+      <p class="text-slate-300 text-xs sm:text-sm max-w-xs mb-6">
+        ¡Completaste los 15 niveles normales! ¿Estás listo para el reto supremo sin trampolines?
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+        <button id="impossibleModeBtn" class="flex-1 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-orbitron font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-red-600/40 border border-red-400/50 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-skull text-yellow-300"></i>
+          MODO IMPOSIBLE
+        </button>
+        <button id="restartWinBtn" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-orbitron font-bold text-xs sm:text-sm rounded-xl border border-slate-600 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i>
+          REINICIAR
+        </button>
+      </div>
+    </div>
+
+    <!-- 100% Victory Modal -->
+    <div id="win100Modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-40 transition-all duration-300">
+      <div class="w-24 h-24 bg-gradient-to-tr from-amber-500/30 to-red-500/30 rounded-full flex items-center justify-center mb-4 border-2 border-yellow-400 text-yellow-300 text-4xl animate-pulse shadow-2xl shadow-amber-500/50">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <h2 class="font-orbitron text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-red-500 mb-2 tracking-wider">
+        ¡JUEGO COMPLETADO AL 100%!
+      </h2>
+      <p class="text-slate-200 text-xs sm:text-sm max-w-md mb-6 font-medium">
+        ¡ERES UNA LEYENDA ABSOLUTA! Has superado los 15 niveles del Modo Imposible superando la camuflada zona roja y la velocidad extrema.
+      </p>
+
+      <button id="restart100Btn" class="px-8 py-4 bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-slate-950 font-orbitron font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-amber-500/40 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-rotate-right"></i>
+        REINICIAR DESDE EL PRINCIPIO
+      </button>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 transition-all duration-300">
+      <div class="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4 border border-red-500/50 text-red-500 text-3xl animate-pulse">
+        <i class="fa-solid fa-skull"></i>
+      </div>
+      <h2 class="font-orbitron text-3xl sm:text-4xl font-black text-red-500 mb-1 neon-text-red tracking-wider">
+        GAME OVER
+      </h2>
+      <p id="gameOverSub" class="text-slate-400 text-xs sm:text-sm mb-6">¡Has colisionado!</p>
+
+      <!-- Scoreboard Summary -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 w-full max-w-xs mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+        <div class="bg-slate-950/50 p-2 sm:p-3 rounded-xl border border-slate-800/80 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-orbitron block mb-1">NIVEL</span>
+          <span id="finalLevel" class="text-lg sm:text-2xl font-orbitron font-black text-cyan-400">1</span>
+        </div>
+        <div class="bg-slate-950/50 p-2 sm:p-3 rounded-xl border border-slate-800/80 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-orbitron block mb-1">PUNTAJE</span>
+          <span id="finalScore" class="text-lg sm:text-2xl font-orbitron font-black text-white">0</span>
+        </div>
+        <div class="bg-slate-950/50 p-2 sm:p-3 rounded-xl border border-slate-800/80 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-orbitron block mb-1">MÁXIMO</span>
+          <span id="finalHighScore" class="text-lg sm:text-2xl font-orbitron font-black text-yellow-400">0</span>
+        </div>
+      </div>
+
+      <button id="retryBtn" class="w-full max-w-xs py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-orbitron font-bold text-lg rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-rotate-right"></i>
+        REINTENTAR
+      </button>
+    </div>
+  </main>
+
+  <footer class="w-full max-w-2xl flex flex-col items-center gap-2 pb-2">
+    <div class="grid grid-cols-2 gap-3 w-full max-w-md">
+      <!-- Saltara Button -->
+      <button id="jumpBtn" class="py-5 sm:py-6 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white font-orbitron font-black text-xl sm:text-2xl rounded-2xl tracking-wider uppercase btn-jump-glow active:scale-95 transition-all border-2 border-blue-400/50 flex items-center justify-center gap-2 select-none cursor-pointer">
+        <i class="fa-solid fa-arrow-up text-lg"></i>
+        SALTAR
+      </button>
+
+      <!-- Volar Button -->
+      <button id="flyBtn" class="py-5 sm:py-6 bg-gradient-to-r from-cyan-600 via-teal-500 to-emerald-600 text-white font-orbitron font-black text-xl sm:text-2xl rounded-2xl tracking-wider uppercase shadow-lg shadow-cyan-500/30 active:scale-95 transition-all border-2 border-cyan-400/50 flex items-center justify-center gap-2 select-none cursor-pointer">
+        <i class="fa-solid fa-plane-up text-lg animate-pulse"></i>
+        VOLAR
+      </button>
+    </div>
+    <p class="text-[11px] text-slate-400 tracking-wide text-center">
+      <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">Espacio</kbd> Saltar | Mantén <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">W</kbd> o <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">Flecha Arriba</kbd> para Volar
+    </p>
+  </footer>
+
+  <script>
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+      }
+
+      playFly() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(120 + Math.random() * 40, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.1);
+        } catch (e) {}
+      }
+
+      playJump() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.15);
+        } catch (e) {}
+      }
+
+      playBounce() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch (e) {}
+      }
+
+      playHit() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.3);
+        } catch (e) {}
+      }
+
+      playScore() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch (e) {}
+      }
+
+      playLevelUp() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554.37, now + 0.1);
+          osc.frequency.setValueAtTime(659.25, now + 0.2);
+          osc.frequency.setValueAtTime(880, now + 0.3);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEffects();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreText = document.getElementById('scoreText');
+    const highScoreText = document.getElementById('highScoreText');
+    const fuelBar = document.getElementById('fuelBar');
+    const levelBadge = document.getElementById('levelBadge');
+    const levelUpBanner = document.getElementById('levelUpBanner');
+    const levelUpTitle = document.getElementById('levelUpTitle');
+    const levelUpSub = document.getElementById('levelUpSub');
+    const finalLevel = document.getElementById('finalLevel');
+    const finalScore = document.getElementById('finalScore');
+    const finalHighScore = document.getElementById('finalHighScore');
+    const startOverlay = document.getElementById('startOverlay');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const gameOverSub = document.getElementById('gameOverSub');
+    const winModal = document.getElementById('winModal');
+    const win100Modal = document.getElementById('win100Modal');
+    const impossibleModeBtn = document.getElementById('impossibleModeBtn');
+    const restartWinBtn = document.getElementById('restartWinBtn');
+    const restart100Btn = document.getElementById('restart100Btn');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const flyBtn = document.getElementById('flyBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+
+    // 15 Normal Levels
+    const LEVELS = [
+      { level: 1, name: "INICIACIÓN NEÓN", targetScore: 4, speed: 5.0, laserFreq: 110, birdFreq: 180, theme: '#3b82f6', bg: '#090d16' },
+      { level: 2, name: "ZONA CIBERNÉTICA", targetScore: 9, speed: 5.7, laserFreq: 100, birdFreq: 160, theme: '#06b6d4', bg: '#08141e' },
+      { level: 3, name: "MATRIZ ESMERALDA", targetScore: 15, speed: 6.4, laserFreq: 90, birdFreq: 145, theme: '#10b981', bg: '#071a14' },
+      { level: 4, name: "TORMENTA PÚRPURA", targetScore: 22, speed: 7.1, laserFreq: 82, birdFreq: 130, theme: '#a855f7', bg: '#13091c' },
+      { level: 5, name: "ÁMBAR CÓSMICO", targetScore: 30, speed: 7.8, laserFreq: 74, birdFreq: 115, theme: '#f59e0b', bg: '#1a1308' },
+      { level: 6, name: "ALERTA ROJA", targetScore: 39, speed: 8.5, laserFreq: 66, birdFreq: 102, theme: '#ef4444', bg: '#1c0909' },
+      { level: 7, name: "FUSIÓN ROSA", targetScore: 49, speed: 9.2, laserFreq: 58, birdFreq: 92, theme: '#ec4899', bg: '#1a0914' },
+      { level: 8, name: "HIPERESPACIO", targetScore: 60, speed: 9.9, laserFreq: 52, birdFreq: 82, theme: '#6366f1', bg: '#0e0e22' },
+      { level: 9, name: "SUPERNOVA", targetScore: 72, speed: 10.6, laserFreq: 46, birdFreq: 74, theme: '#f97316', bg: '#200d05' },
+      { level: 10, name: "NÚCLEO SOLAR", targetScore: 85, speed: 11.3, laserFreq: 41, birdFreq: 66, theme: '#eab308', bg: '#1c1907' },
+      { level: 11, name: "VÓRTICE CIAN", targetScore: 99, speed: 12.0, laserFreq: 36, birdFreq: 58, theme: '#0ea5e9', bg: '#051824' },
+      { level: 12, name: "LLAMA VIOLETA", targetScore: 114, speed: 12.6, laserFreq: 32, birdFreq: 52, theme: '#8b5cf6', bg: '#140c24' },
+      { level: 13, name: "RAYO MAGENTA", targetScore: 130, speed: 13.1, laserFreq: 29, birdFreq: 46, theme: '#d946ef', bg: '#210a24' },
+      { level: 14, name: "MODO TITÁN", targetScore: 147, speed: 13.6, laserFreq: 26, birdFreq: 41, theme: '#f43f5e', bg: '#240810' },
+      { level: 15, name: "DESAFÍO FINAL", targetScore: 165, speed: 14.1, laserFreq: 24, birdFreq: 36, theme: '#ffffff', bg: '#1e1b4b' }
+    ];
+
+    // 15 Impossible Levels (High speed base, super fast birds, dark intense red camouflaging background)
+    const IMPOSSIBLE_LEVELS = Array.from({ length: 15 }, (_, i) => ({
+      level: i + 1,
+      name: `IMPOSIBLE ${i + 1}`,
+      targetScore: (i + 1) * 12,
+      speed: 14.0 + (i * 0.4),
+      laserFreq: Math.max(20, 30 - i),
+      birdFreq: Math.max(22, 42 - (i * 1.5)),
+      theme: '#ef4444',
+      bg: '#751010' // Intense dark red camouflage background
+    }));
+
+    let currentLevelIdx = 0;
+    let isImpossibleMode = false;
+    let bannerTimeout = null;
+
+    let gameState = 'START';
+    let score = 0;
+    let highScore = localStorage.getItem('cyberjump_highscore') || 0;
+    highScoreText.innerText = highScore;
+
+    function resizeCanvas() {
+      const parent = canvas.parentElement;
+      canvas.width = parent.clientWidth;
+      canvas.height = parent.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const GRAVITY = 0.65;
+    const JUMP_FORCE = -12.5;
+    const FLY_THRUST = -1.1;
+
+    const player = {
+      x: 80,
+      y: 0,
+      width: 36,
+      height: 48,
+      velocityY: 0,
+      isGrounded: false,
+      isFlying: false,
+      fuel: 100,
+      maxFuel: 100,
+      trail: [],
+      armAngle: 0,
+
+      reset() {
+        this.x = Math.min(80, canvas.width * 0.15);
+        this.y = canvas.height - 80 - this.height;
+        this.velocityY = 0;
+        this.isGrounded = true;
+        this.isFlying = false;
+        this.fuel = this.maxFuel;
+        this.trail = [];
+        this.armAngle = 0;
+      },
+
+      jump() {
+        if (this.isGrounded && gameState === 'PLAYING') {
+          this.velocityY = JUMP_FORCE;
+          this.isGrounded = false;
+          sound.playJump();
+          createJumpParticles(this.x + this.width / 2, this.y + this.height);
+        }
+      },
+
+      update(groundY) {
+        if (this.isFlying && this.fuel > 0 && gameState === 'PLAYING') {
+          this.velocityY += FLY_THRUST;
+          if (this.velocityY < -8) this.velocityY = -8;
+          this.fuel = Math.max(0, this.fuel - 0.75);
+          this.isGrounded = false;
+          sound.playFly();
+          createThrustParticles(this.x + this.width / 2, this.y + this.height);
+        } else {
+          if (this.isGrounded && this.fuel < this.maxFuel) {
+            this.fuel = Math.min(this.maxFuel, this.fuel + 0.4);
+          }
+        }
+
+        this.velocityY += GRAVITY;
+        this.y += this.velocityY;
+
+        if (this.y < 10) {
+          this.y = 10;
+          this.velocityY = 0;
+        }
+
+        if (this.y + this.height >= groundY) {
+          this.y = groundY - this.height;
+          this.velocityY = 0;
+          this.isGrounded = true;
+        }
+
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 5) this.trail.shift();
+      },
+
+      draw() {
+        // Motion Trail
+        for (let i = 0; i < this.trail.length; i++) {
+          const pos = this.trail[i];
+          const alpha = (i + 1) / this.trail.length * 0.3;
+          ctx.fillStyle = `rgba(59, 130, 246, ${alpha})`;
+          ctx.beginPath();
+          ctx.roundRect(pos.x, pos.y, this.width, this.height, 8);
+          ctx.fill();
+        }
+
+        // Body
+        ctx.fillStyle = this.isFlying ? '#0891b2' : '#1e3a8a';
+        ctx.strokeStyle = this.isFlying ? '#22d3ee' : '#60a5fa';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.roundRect(this.x, this.y, this.width, this.height, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Visor
+        ctx.fillStyle = this.isFlying ? '#a5f3fc' : '#60a5fa';
+        ctx.shadowColor = this.isFlying ? '#06b6d4' : '#3b82f6';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(this.x + 18, this.y + 10, 14, 8);
+        ctx.shadowBlur = 0;
+
+        // Hand/Arm animation logic
+        ctx.fillStyle = '#60a5fa';
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3;
+
+        if (this.isFlying) {
+          // Flying Pose: Arms pushed downward with small thrusters in hands
+          ctx.beginPath();
+          ctx.moveTo(this.x + 6, this.y + 24);
+          ctx.lineTo(this.x - 6, this.y + 38);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x - 6, this.y + 38, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(this.x + this.width - 6, this.y + 24);
+          ctx.lineTo(this.x + this.width + 6, this.y + 38);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x + this.width + 6, this.y + 38, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Hand thruster glints
+          ctx.fillStyle = '#22d3ee';
+          ctx.fillRect(this.x - 8, this.y + 40, 4, 6);
+          ctx.fillRect(this.x + this.width + 4, this.y + 40, 4, 6);
+
+        } else if (!this.isGrounded) {
+          // Jumping Pose: Hands reaching up into the air
+          ctx.beginPath();
+          ctx.moveTo(this.x + 6, this.y + 20);
+          ctx.lineTo(this.x - 4, this.y + 4);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x - 4, this.y + 4, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(this.x + this.width - 6, this.y + 20);
+          ctx.lineTo(this.x + this.width + 8, this.y + 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x + this.width + 8, this.y + 2, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else {
+          // Grounded Standing Pose
+          ctx.beginPath();
+          ctx.moveTo(this.x + 6, this.y + 22);
+          ctx.lineTo(this.x + 2, this.y + 34);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x + 2, this.y + 34, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(this.x + this.width - 6, this.y + 22);
+          ctx.lineTo(this.x + this.width - 2, this.y + 34);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(this.x + this.width - 2, this.y + 34, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Main Thruster Flames
+        if (this.isFlying || !this.isGrounded) {
+          ctx.fillStyle = this.isFlying ? '#06b6d4' : '#f59e0b';
+          ctx.beginPath();
+          ctx.moveTo(this.x + 8, this.y + this.height);
+          ctx.lineTo(this.x + 14, this.y + this.height + (this.isFlying ? 18 : 12));
+          ctx.lineTo(this.x + 20, this.y + this.height);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(this.x + 16, this.y + this.height);
+          ctx.lineTo(this.x + 22, this.y + this.height + (this.isFlying ? 18 : 12));
+          ctx.lineTo(this.x + 28, this.y + this.height);
+          ctx.fill();
+        }
+      }
+    };
+
+    let lasers = [];
+    let laserSpawnTimer = 0;
+
+    class Laser {
+      constructor(speed, isTrampoline = false) {
+        this.width = Math.floor(Math.random() * 20) + 50;
+        this.height = 14;
+        this.x = canvas.width + 50;
+        const groundY = canvas.height - 80;
+        this.y = groundY - this.height - (Math.random() < 0.25 ? 25 : 0);
+        this.speed = speed;
+        this.passed = false;
+        this.isTrampoline = isTrampoline;
+        this.triggered = false;
+      }
+
+      update() {
+        this.x -= this.speed;
+      }
+
+      draw() {
+        ctx.save();
+        if (this.isTrampoline) {
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 15;
+
+          const grad = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y);
+          grad.addColorStop(0, '#6ee7b7');
+          grad.addColorStop(0.5, '#ffffff');
+          grad.addColorStop(1, '#059669');
+
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(this.x, this.y, this.width, this.height, 6);
+          ctx.fill();
+
+          // Arrow Indicator inside trampoline laser
+          ctx.fillStyle = '#047857';
+          ctx.beginPath();
+          ctx.moveTo(this.x + this.width / 2 - 8, this.y + 10);
+          ctx.lineTo(this.x + this.width / 2, this.y + 3);
+          ctx.lineTo(this.x + this.width / 2 + 8, this.y + 10);
+          ctx.fill();
+        } else {
+          ctx.shadowColor = '#ff2a6d';
+          ctx.shadowBlur = 15;
+
+          const grad = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y);
+          grad.addColorStop(0, '#ff7597');
+          grad.addColorStop(0.5, '#ffffff');
+          grad.addColorStop(1, '#ff2a6d');
+
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(this.x, this.y, this.width, this.height, 6);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(this.x + 2, this.y + 4, this.width - 4, 6);
+        }
+        ctx.restore();
+      }
+    }
+
+    let birds = [];
+    let birdSpawnTimer = 0;
+
+    class Bird {
+      constructor(speed) {
+        this.width = 38;
+        this.height = 26;
+        this.x = canvas.width + 40;
+        const groundY = canvas.height - 80;
+        const minHeight = 90;
+        const maxHeight = groundY - 80;
+        this.y = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+        this.speed = speed + (isImpossibleMode ? 6.5 : 1.5);
+        this.passed = false;
+        this.wingAngle = 0;
+      }
+
+      update() {
+        this.x -= this.speed;
+        this.wingAngle += 0.25;
+        this.y += Math.sin(this.wingAngle * 0.5) * 0.8;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.fillStyle = '#ef4444';
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.ellipse(this.x + 18, this.y + 13, 14, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(this.x + 8, this.y + 10, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.moveTo(this.x + 2, this.y + 12);
+        ctx.lineTo(this.x - 6, this.y + 15);
+        ctx.lineTo(this.x + 2, this.y + 17);
+        ctx.fill();
+
+        const wingOffset = Math.sin(this.wingAngle) * 12;
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(this.x + 16, this.y + 10);
+        ctx.lineTo(this.x + 26, this.y + 10 - wingOffset);
+        ctx.lineTo(this.x + 28, this.y + 14);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    let particles = [];
+    function createJumpParticles(x, y) {
+      for (let i = 0; i < 10; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: Math.random() * -2 - 1,
+          radius: Math.random() * 3 + 2,
+          color: '#3b82f6', alpha: 1
+        });
+      }
+    }
+
+    function createBounceParticles(x, y) {
+      for (let i = 0; i < 16; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: Math.random() * -5 - 2,
+          radius: Math.random() * 4 + 2,
+          color: '#10b981', alpha: 1
+        });
+      }
+    }
+
+    function createThrustParticles(x, y) {
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 12, y: y,
+          vx: (Math.random() - 0.5) * 2,
+          vy: Math.random() * 4 + 2,
+          radius: Math.random() * 4 + 2,
+          color: Math.random() < 0.5 ? '#06b6d4' : '#a5f3fc',
+          alpha: 1
+        });
+      }
+    }
+
+    function createHitParticles(x, y) {
+      for (let i = 0; i < 25; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          radius: Math.random() * 4 + 2,
+          color: '#ff2a6d', alpha: 1
+        });
+      }
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.03;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+        } else {
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    let gridOffset = 0;
+    function drawBackgroundAndFloor(groundY) {
+      const activeLevels = isImpossibleMode ? IMPOSSIBLE_LEVELS : LEVELS;
+      const currentLevel = activeLevels[currentLevelIdx];
+
+      ctx.fillStyle = isImpossibleMode ? '#751010' : currentLevel.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = isImpossibleMode ? 'rgba(180, 30, 30, 0.5)' : 'rgba(30, 41, 59, 0.5)';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+
+      for (let x = 0; x < canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, groundY);
+        ctx.stroke();
+      }
+
+      gridOffset = (gridOffset + currentLevel.speed) % gridSize;
+      ctx.fillStyle = isImpossibleMode ? '#450a0a' : '#0f172a';
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+      ctx.strokeStyle = currentLevel.theme;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(canvas.width, groundY);
+      ctx.stroke();
+
+      ctx.strokeStyle = `${currentLevel.theme}40`;
+      ctx.lineWidth = 1;
+      for (let x = -gridOffset; x < canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+    }
+
+    function checkLevelProgression() {
+      const activeLevels = isImpossibleMode ? IMPOSSIBLE_LEVELS : LEVELS;
+      const currentLevel = activeLevels[currentLevelIdx];
+
+      if (score >= currentLevel.targetScore) {
+        if (currentLevelIdx < activeLevels.length - 1) {
+          currentLevelIdx++;
+          const nextLevel = activeLevels[currentLevelIdx];
+          levelBadge.innerText = (isImpossibleMode ? 'IMP ' : '') + nextLevel.level;
+          sound.playLevelUp();
+
+          levelUpTitle.innerText = `${isImpossibleMode ? 'MODO IMPOSIBLE ' : ''}NIVEL ${nextLevel.level}`;
+          levelUpSub.innerText = `Velocidad: ${nextLevel.speed.toFixed(1)}x`;
+          levelUpBanner.classList.remove('hidden');
+
+          if (bannerTimeout) clearTimeout(bannerTimeout);
+          bannerTimeout = setTimeout(() => {
+            levelUpBanner.classList.add('hidden');
+          }, 2200);
+        } else {
+          gameState = 'GAMEOVER';
+          if (!isImpossibleMode) {
+            winModal.classList.remove('hidden');
+          } else {
+            win100Modal.classList.remove('hidden');
+          }
+        }
+      }
+    }
+
+    function gameOver() {
+      gameState = 'GAMEOVER';
+      sound.playHit();
+      createHitParticles(player.x + player.width / 2, player.y + player.height / 2);
+
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('cyberjump_highscore', highScore);
+        highScoreText.innerText = highScore;
+      }
+
+      if (isImpossibleMode) {
+        gameOverSub.innerText = "¡Has caído en el Modo Imposible! Vuelves al Nivel 1 Normal.";
+        isImpossibleMode = false;
+      } else {
+        gameOverSub.innerText = "¡Te ha alcanzado un obstáculo!";
+      }
+
+      finalLevel.innerText = (isImpossibleMode ? 'IMP ' : '') + LEVELS[currentLevelIdx].level;
+      finalScore.innerText = score;
+      finalHighScore.innerText = highScore;
+      gameOverModal.classList.remove('hidden');
+    }
+
+    function resetGame(startImpossible = false) {
+      score = 0;
+      currentLevelIdx = 0;
+      isImpossibleMode = startImpossible;
+      levelBadge.innerText = isImpossibleMode ? 'IMP 1' : '1';
+
+      levelUpBanner.classList.add('hidden');
+      winModal.classList.add('hidden');
+      win100Modal.classList.add('hidden');
+      gameOverModal.classList.add('hidden');
+      startOverlay.classList.add('hidden');
+      if (bannerTimeout) clearTimeout(bannerTimeout);
+
+      laserSpawnTimer = 0;
+      birdSpawnTimer = 0;
+      lasers = [];
+      birds = [];
+      particles = [];
+      scoreText.innerText = '0';
+      player.reset();
+      gameState = 'PLAYING';
+    }
+
+    impossibleModeBtn.addEventListener('click', () => { sound.init(); resetGame(true); });
+    restartWinBtn.addEventListener('click', () => { sound.init(); resetGame(false); });
+    restart100Btn.addEventListener('click', () => { sound.init(); resetGame(false); });
+    startGameBtn.addEventListener('click', () => { sound.init(); resetGame(false); });
+    retryBtn.addEventListener('click', () => { sound.init(); resetGame(false); });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      soundIcon.className = sound.muted ? 'fa-solid fa-volume-xmark text-red-400' : 'fa-solid fa-volume-high text-blue-400';
+    });
+
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (gameState === 'START' || (gameState === 'GAMEOVER' && winModal.classList.contains('hidden') && win100Modal.classList.contains('hidden'))) {
+          resetGame(false);
+        } else {
+          player.jump();
+        }
+      } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        if (gameState === 'START' || (gameState === 'GAMEOVER' && winModal.classList.contains('hidden') && win100Modal.classList.contains('hidden'))) {
+          resetGame(false);
+        } else {
+          player.isFlying = true;
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        player.isFlying = false;
+      }
+    });
+
+    const triggerJump = (e) => {
+      if (e) e.preventDefault();
+      sound.init();
+      if (gameState === 'START' || (gameState === 'GAMEOVER' && winModal.classList.contains('hidden') && win100Modal.classList.contains('hidden'))) {
+        resetGame(false);
+      } else {
+        player.jump();
+      }
+    };
+
+    jumpBtn.addEventListener('click', triggerJump);
+    jumpBtn.addEventListener('touchstart', triggerJump, { passive: false });
+
+    const startFlying = (e) => {
+      if (e) e.preventDefault();
+      sound.init();
+      if (gameState === 'START' || (gameState === 'GAMEOVER' && winModal.classList.contains('hidden') && win100Modal.classList.contains('hidden'))) {
+        resetGame(false);
+      } else {
+        player.isFlying = true;
+      }
+    };
+
+    const stopFlying = (e) => {
+      if (e) e.preventDefault();
+      player.isFlying = false;
+    };
+
+    flyBtn.addEventListener('mousedown', startFlying);
+    flyBtn.addEventListener('mouseup', stopFlying);
+    flyBtn.addEventListener('mouseleave', stopFlying);
+    flyBtn.addEventListener('touchstart', startFlying, { passive: false });
+    flyBtn.addEventListener('touchend', stopFlying, { passive: false });
+
+    function gameLoop() {
+      const groundY = canvas.height - 80;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackgroundAndFloor(groundY);
+
+      if (gameState === 'PLAYING') {
+        const activeLevels = isImpossibleMode ? IMPOSSIBLE_LEVELS : LEVELS;
+        const currentLevel = activeLevels[currentLevelIdx];
+
+        player.update(groundY);
+        player.draw();
+
+        // Fuel Bar UI
+        const fuelPercent = (player.fuel / player.maxFuel) * 100;
+        fuelBar.style.width = `${fuelPercent}%`;
+        if (fuelPercent < 25) {
+          fuelBar.className = "bg-gradient-to-r from-red-500 to-amber-500 h-full rounded-full transition-all duration-75 animate-pulse";
+        } else {
+          fuelBar.className = "bg-gradient-to-r from-cyan-400 to-emerald-400 h-full rounded-full transition-all duration-75";
+        }
+
+        // Laser Spawning Logic (Trampolines spawn ONLY in Normal Mode)
+        laserSpawnTimer++;
+        if (laserSpawnTimer >= currentLevel.laserFreq) {
+          const isTrampoline = !isImpossibleMode && Math.random() < 0.28;
+          lasers.push(new Laser(currentLevel.speed, isTrampoline));
+          laserSpawnTimer = 0;
+        }
+
+        for (let i = lasers.length - 1; i >= 0; i--) {
+          const l = lasers[i];
+          l.update();
+          l.draw();
+
+          if (!l.passed && l.x + l.width < player.x) {
+            l.passed = true;
+            score++;
+            scoreText.innerText = score;
+            sound.playScore();
+            checkLevelProgression();
+          }
+
+          const playerHitBox = {
+            x: player.x + 4,
+            y: player.y + 4,
+            width: player.width - 8,
+            height: player.height - 8
+          };
+
+          if (
+            playerHitBox.x < l.x + l.width &&
+            playerHitBox.x + playerHitBox.width > l.x &&
+            playerHitBox.y < l.y + l.height &&
+            playerHitBox.y + playerHitBox.height > l.y
+          ) {
+            if (l.isTrampoline) {
+              // Trampoline bounce reaction
+              player.velocityY = -16.5;
+              player.isGrounded = false;
+              sound.playBounce();
+              createBounceParticles(player.x + player.width / 2, player.y + player.height);
+            } else {
+              gameOver();
+            }
+          }
+
+          if (l.x + l.width < -50) {
+            lasers.splice(i, 1);
+          }
+        }
+
+        // Bird Spawning Logic
+        birdSpawnTimer++;
+        if (birdSpawnTimer >= currentLevel.birdFreq) {
+          birds.push(new Bird(currentLevel.speed));
+          birdSpawnTimer = 0;
+        }
+
+        for (let i = birds.length - 1; i >= 0; i--) {
+          const b = birds[i];
+          b.update();
+          b.draw();
+
+          if (!b.passed && b.x + b.width < player.x) {
+            b.passed = true;
+            score++;
+            scoreText.innerText = score;
+            sound.playScore();
+            checkLevelProgression();
+          }
+
+          const playerHitBox = {
+            x: player.x + 4,
+            y: player.y + 4,
+            width: player.width - 8,
+            height: player.height - 8
+          };
+
+          if (
+            playerHitBox.x < b.x + b.width &&
+            playerHitBox.x + playerHitBox.width > b.x &&
+            playerHitBox.y < b.y + b.height &&
+            playerHitBox.y + playerHitBox.height > b.y
+          ) {
+            gameOver();
+          }
+
+          if (b.x + b.width < -50) {
+            birds.splice(i, 1);
+          }
+        }
+
+        updateParticles();
+      } else {
+        player.draw();
+        updateParticles();
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    player.reset();
+    gameLoop();
+  </script>
+</body>
+</html>
