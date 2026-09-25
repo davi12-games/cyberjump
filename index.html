@@ -205,7 +205,7 @@
 
   <footer class="w-full max-w-2xl flex flex-col items-center gap-2 pb-2">
     <div class="grid grid-cols-2 gap-3 w-full max-w-md">
-      <!-- Saltara Button -->
+      <!-- Saltar Button -->
       <button id="jumpBtn" class="py-5 sm:py-6 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white font-orbitron font-black text-xl sm:text-2xl rounded-2xl tracking-wider uppercase btn-jump-glow active:scale-95 transition-all border-2 border-blue-400/50 flex items-center justify-center gap-2 select-none cursor-pointer">
         <i class="fa-solid fa-arrow-up text-lg"></i>
         SALTAR
@@ -397,7 +397,7 @@
       { level: 15, name: "DESAFÍO FINAL", targetScore: 165, speed: 14.1, laserFreq: 24, birdFreq: 36, theme: '#ffffff', bg: '#1e1b4b' }
     ];
 
-    // 15 Impossible Levels (High speed base, super fast birds, dark intense red camouflaging background)
+    // 15 Impossible Levels
     const IMPOSSIBLE_LEVELS = Array.from({ length: 15 }, (_, i) => ({
       level: i + 1,
       name: `IMPOSIBLE ${i + 1}`,
@@ -406,7 +406,7 @@
       laserFreq: Math.max(20, 30 - i),
       birdFreq: Math.max(22, 42 - (i * 1.5)),
       theme: '#ef4444',
-      bg: '#751010' // Intense dark red camouflage background
+      bg: '#751010'
     }));
 
     let currentLevelIdx = 0;
@@ -496,7 +496,6 @@
       },
 
       draw() {
-        // Motion Trail
         for (let i = 0; i < this.trail.length; i++) {
           const pos = this.trail[i];
           const alpha = (i + 1) / this.trail.length * 0.3;
@@ -506,7 +505,6 @@
           ctx.fill();
         }
 
-        // Body
         ctx.fillStyle = this.isFlying ? '#0891b2' : '#1e3a8a';
         ctx.strokeStyle = this.isFlying ? '#22d3ee' : '#60a5fa';
         ctx.lineWidth = 2;
@@ -516,25 +514,21 @@
         ctx.fill();
         ctx.stroke();
 
-        // Visor
         ctx.fillStyle = this.isFlying ? '#a5f3fc' : '#60a5fa';
         ctx.shadowColor = this.isFlying ? '#06b6d4' : '#3b82f6';
         ctx.shadowBlur = 10;
         ctx.fillRect(this.x + 18, this.y + 10, 14, 8);
         ctx.shadowBlur = 0;
 
-        // Hand/Arm animation logic
         ctx.fillStyle = '#60a5fa';
         ctx.strokeStyle = '#2563eb';
         ctx.lineWidth = 3;
 
         if (this.isFlying) {
-          // Flying Pose: Arms pushed downward with small thrusters in hands
           ctx.beginPath();
           ctx.moveTo(this.x + 6, this.y + 24);
           ctx.lineTo(this.x - 6, this.y + 38);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x - 6, this.y + 38, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -543,23 +537,18 @@
           ctx.moveTo(this.x + this.width - 6, this.y + 24);
           ctx.lineTo(this.x + this.width + 6, this.y + 38);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x + this.width + 6, this.y + 38, 4, 0, Math.PI * 2);
           ctx.fill();
 
-          // Hand thruster glints
           ctx.fillStyle = '#22d3ee';
           ctx.fillRect(this.x - 8, this.y + 40, 4, 6);
           ctx.fillRect(this.x + this.width + 4, this.y + 40, 4, 6);
-
         } else if (!this.isGrounded) {
-          // Jumping Pose: Hands reaching up into the air
           ctx.beginPath();
           ctx.moveTo(this.x + 6, this.y + 20);
           ctx.lineTo(this.x - 4, this.y + 4);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x - 4, this.y + 4, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -568,18 +557,14 @@
           ctx.moveTo(this.x + this.width - 6, this.y + 20);
           ctx.lineTo(this.x + this.width + 8, this.y + 2);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x + this.width + 8, this.y + 2, 4, 0, Math.PI * 2);
           ctx.fill();
-
         } else {
-          // Grounded Standing Pose
           ctx.beginPath();
           ctx.moveTo(this.x + 6, this.y + 22);
           ctx.lineTo(this.x + 2, this.y + 34);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x + 2, this.y + 34, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -588,13 +573,11 @@
           ctx.moveTo(this.x + this.width - 6, this.y + 22);
           ctx.lineTo(this.x + this.width - 2, this.y + 34);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(this.x + this.width - 2, this.y + 34, 4, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // Main Thruster Flames
         if (this.isFlying || !this.isGrounded) {
           ctx.fillStyle = this.isFlying ? '#06b6d4' : '#f59e0b';
           ctx.beginPath();
@@ -625,7 +608,6 @@
         this.speed = speed;
         this.passed = false;
         this.isTrampoline = isTrampoline;
-        this.triggered = false;
       }
 
       update() {
@@ -648,7 +630,6 @@
           ctx.roundRect(this.x, this.y, this.width, this.height, 6);
           ctx.fill();
 
-          // Arrow Indicator inside trampoline laser
           ctx.fillStyle = '#047857';
           ctx.beginPath();
           ctx.moveTo(this.x + this.width / 2 - 8, this.y + 10);
@@ -1002,7 +983,6 @@
         player.update(groundY);
         player.draw();
 
-        // Fuel Bar UI
         const fuelPercent = (player.fuel / player.maxFuel) * 100;
         fuelBar.style.width = `${fuelPercent}%`;
         if (fuelPercent < 25) {
@@ -1011,7 +991,6 @@
           fuelBar.className = "bg-gradient-to-r from-cyan-400 to-emerald-400 h-full rounded-full transition-all duration-75";
         }
 
-        // Laser Spawning Logic (Trampolines spawn ONLY in Normal Mode)
         laserSpawnTimer++;
         if (laserSpawnTimer >= currentLevel.laserFreq) {
           const isTrampoline = !isImpossibleMode && Math.random() < 0.28;
@@ -1026,10 +1005,12 @@
 
           if (!l.passed && l.x + l.width < player.x) {
             l.passed = true;
-            score++;
-            scoreText.innerText = score;
-            sound.playScore();
-            checkLevelProgression();
+            if (!l.isTrampoline) {
+              score++;
+              scoreText.innerText = score;
+              sound.playScore();
+              checkLevelProgression();
+            }
           }
 
           const playerHitBox = {
@@ -1046,7 +1027,6 @@
             playerHitBox.y + playerHitBox.height > l.y
           ) {
             if (l.isTrampoline) {
-              // Trampoline bounce reaction
               player.velocityY = -16.5;
               player.isGrounded = false;
               sound.playBounce();
@@ -1061,7 +1041,6 @@
           }
         }
 
-        // Bird Spawning Logic
         birdSpawnTimer++;
         if (birdSpawnTimer >= currentLevel.birdFreq) {
           birds.push(new Bird(currentLevel.speed));
